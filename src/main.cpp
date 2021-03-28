@@ -1,17 +1,34 @@
+#include <sstream>
+#include <iomanip>
 #include "main.hpp"
 #include "GlobalNamespace/BeatmapObjectSpawnMovementData.hpp"
 #include "questui/shared/QuestUI.hpp"
+#include "questui/shared/BeatSaberUI.hpp"
 #include "custom-types/shared/register.hpp"
 #include "NjsTweaksViewController.hpp"
 #include "bs-utils/shared/utils.hpp"
 #include "GlobalNamespace/GameplaySetupViewController.hpp"
+#include "GlobalNamespace/StandardLevelDetailViewController.hpp"
+#include "GlobalNamespace/IDifficultyBeatmap.hpp"
 using namespace GlobalNamespace;
 using namespace UnityEngine;
 using namespace NjsTweaks;
 using namespace rapidjson;
 using namespace bs_utils;
+using namespace QuestUI;
 
 static ModInfo modInfo;
+static TMPro::TextMeshProUGUI* njsDisplay = nullptr;
+static TMPro::TextMeshProUGUI* offsetDisplay = nullptr;
+
+static Il2CppString* FloatKeyValueToString(std::string key, float value) {
+    std::stringstream stream;
+    stream << key;
+    stream << ": ";
+    stream << std::fixed << std::setprecision(1) << value;
+    std::string_view str = stream.str();
+    return il2cpp_utils::createcsstr(str);
+}
 
 MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void,
     BeatmapObjectSpawnMovementData* self,
@@ -30,6 +47,35 @@ MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void,
         startNoteJumpMovementSpeed = targetNjs;
     }
     BeatmapObjectSpawnMovementData_Init(self, noteLinesCount, startNoteJumpMovementSpeed, startBpm, noteJumpStartBeatOffset, jumpOffsetY, rightVec, forwardVec);
+}
+
+MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_get_selectedDifficultyBeatmap, IDifficultyBeatmap*) {
+    auto difficulty = StandardLevelDetailViewController_get_selectedDifficultyBeatmap();
+    float njs = difficulty -> get_noteJumpMovementSpeed();
+    float offset = difficulty -> get_noteJumpStartBeatOffset();
+    if (njsDisplay != nullptr && offsetDisplay != nullptr) {
+        njsDisplay -> SetText(FloatKeyValueToString("NJS", njs));
+        offsetDisplay -> SetText(FloatKeyValueToString("Offset", offset));
+    }
+    return difficulty;
+}
+
+MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_DidActivate, void, GlobalNamespace::StandardLevelDetailViewController* self, bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
+{
+    if (firstActivation) {
+        BeatSaberUI::ClearCache();
+        auto layout = BeatSaberUI::CreateHorizontalLayoutGroup(self -> get_transform());
+        auto transform = layout -> get_gameObject() -> GetComponent<RectTransform*>();
+        transform -> set_anchoredPosition(Vector2(2.0f, 0.0f));
+        transform -> set_localScale(Vector3(0.9, 0.5, 0.6));
+        njsDisplay = BeatSaberUI::CreateText(transform, "");
+        njsDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
+        njsDisplay -> set_alpha(0.5f);
+        offsetDisplay = BeatSaberUI::CreateText(transform, "");
+        offsetDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
+        offsetDisplay -> set_alpha(0.5f);
+    }
+    StandardLevelDetailViewController_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
 }
 
 MAKE_HOOK_OFFSETLESS(GameplaySetupViewController_DidActivate, void, GlobalNamespace::GameplaySetupViewController* self, bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
@@ -84,6 +130,8 @@ extern "C" void load() {
 
     INSTALL_HOOK_OFFSETLESS(logger, BeatmapObjectSpawnMovementData_Init, il2cpp_utils::FindMethodUnsafe("", "BeatmapObjectSpawnMovementData", "Init", 7));
     INSTALL_HOOK_OFFSETLESS(logger, GameplaySetupViewController_DidActivate, il2cpp_utils::FindMethodUnsafe("", "GameplaySetupViewController", "DidActivate", 3));
+    INSTALL_HOOK_OFFSETLESS(logger, StandardLevelDetailViewController_DidActivate, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailViewController", "DidActivate", 3));
+    INSTALL_HOOK_OFFSETLESS(logger, StandardLevelDetailViewController_get_selectedDifficultyBeatmap, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailViewController", "get_selectedDifficultyBeatmap", 0));
 
     logger.info("Installed all NjsTweaks hooks...");
 }
