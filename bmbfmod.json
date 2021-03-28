@@ -1,0 +1,29 @@
+{
+  "id": "NjsTweaks",
+  "name": "NjsTweaks",
+  "version": "0.0.1",
+  "author": "KleaTech",
+  "description": [
+    "A Beat Saber mod for the Oculus Quest platform that allows players to easily modify NJS. Currently under development."
+  ],
+  "category": "Gameplay",
+  "gameVersion": "1.13.2",
+  "platform": "Quest",
+  "components": [
+    {
+      "type": "HookMod",
+      "installAction": {
+        "installLibraryFile": "libnjstweaks.so"
+      },
+      "uninstallAction": {
+        "removeLibraryFile": "libnjstweaks.so"
+      }
+    },
+    {
+      "type": "HookModLibrary",
+      "installAction": {
+        "installLibraryFile": "libbeatsaber-hook_1_2_4.so"
+      }
+    }
+  ]
+}
