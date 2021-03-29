@@ -4,4 +4,4 @@ while ([string]::IsNullOrEmpty($bspid)) {
     Start-Sleep -Milliseconds 100
     $bspid = adb shell pidof com.beatgames.beatsaber
 }
-adb logcat -T "$timestamp" --pid $bspid "*:I" | Select-String -pattern "(QuestHook|modloader|AndroidRuntime)"
+adb logcat -T "$timestamp" --pid $bspid "*:D" | Select-String -pattern "(QuestHook|modloader|AndroidRuntime)"
