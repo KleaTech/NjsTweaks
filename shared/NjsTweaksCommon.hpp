@@ -7,6 +7,7 @@ namespace NjsTweaks { namespace Common {
     struct config_t {
         bool enabled = true;
         bool autoIncrease10Njs = false;
+        bool onlyOnExpert = false;
         float autoIncreaseTargetNjs = 14.0f;
         bool logToFile = false;
     };

@@ -1,5 +1,4 @@
-#include <sstream>
-#include <iomanip>
+
 #include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
 #include "bs-utils/shared/utils.hpp"
 #include "custom-types/shared/register.hpp"
@@ -18,25 +17,20 @@
 #include "GlobalNamespace/BeatmapDifficulty.hpp"
 #include "NjsTweaksCommon.hpp"
 #include "NjsTweaksViewController.hpp"
+#include "NjsTweaksUtils.hpp"
 using namespace GlobalNamespace;
 using namespace UnityEngine;
 using namespace NjsTweaks;
 using namespace bs_utils;
 using namespace QuestUI;
 using namespace NjsTweaks::Common;
+using namespace NjsTweaks::Utils;
 
+static std::string exception = "ex";
 static TMPro::TextMeshProUGUI* njsDisplay = nullptr;
 static TMPro::TextMeshProUGUI* offsetDisplay = nullptr;
-static StandardLevelDetailViewController* standardLevelDetailViewController;
-
-static Il2CppString* FloatKeyValueToString(std::string key, float value) {
-    std::stringstream stream;
-    stream << key;
-    stream << ": ";
-    stream << std::fixed << std::setprecision(1) << value;
-    std::string_view str = stream.str();
-    return il2cpp_utils::createcsstr(str);
-}
+static StandardLevelDetailViewController* standardLevelDetailViewController = nullptr;
+static IDifficultyBeatmap* difficulty = nullptr;
 
 MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpawnMovementData* self,
     int noteLinesCount,
@@ -47,12 +41,21 @@ MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpa
     Vector3 rightVec,
     Vector3 forwardVec
 ) {
-    if (startNoteJumpMovementSpeed == 10.0f && myConfig.enabled) {
-        Submission::disable(modInfo);
-        float targetNjs = myConfig.autoIncreaseTargetNjs;
-        getLogger().info("Found a song with NJS 10, increasing it to %.2f", targetNjs);
-        startNoteJumpMovementSpeed = targetNjs;
-    }
+    try {
+        if (startNoteJumpMovementSpeed == 10.0f && myConfig.enabled) {
+            getLogger().info("Found a song with NJS 10 and NjsTweaks is enabled.");
+            if (myConfig.onlyOnExpert && difficulty -> get_difficulty().value != BeatmapDifficulty::Expert) {
+                getLogger().info("OnlyOnExpert is enabled, but the difficulty is not Expert.");
+            } else {
+                Submission::disable(modInfo);
+                float targetNjs = myConfig.autoIncreaseTargetNjs;
+                getLogger().info("Auto-Increasing NJS to %.2f", targetNjs);
+                startNoteJumpMovementSpeed = targetNjs;
+            }
+        }
+    } catch (...) {
+        getLogger().error("Error in BeatmapObjectSpawnMovementData_Init");
+    }    
     BeatmapObjectSpawnMovementData_Init(self, noteLinesCount, startNoteJumpMovementSpeed, startBpm, noteJumpStartBeatOffset, jumpOffsetY, rightVec, forwardVec);
 }
 
@@ -61,7 +64,15 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_HandleBeatmapDifficultySegmentedCon
     BeatmapDifficulty difficulty
 ) {
     StandardLevelDetailView_HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty(self, controller, difficulty);
-    standardLevelDetailViewController -> get_selectedDifficultyBeatmap();
+    try {
+        if (standardLevelDetailViewController == nullptr) {
+            getLogger().error("Nullptr error: standardLevelDetailViewController");
+            throw exception;
+        }
+        standardLevelDetailViewController -> get_selectedDifficultyBeatmap();
+    } catch (...) {
+        getLogger().error("Error in StandardLevelDetailView_HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty");
+    }
 }
 
 MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic, void, StandardLevelDetailView* self, 
@@ -69,18 +80,32 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_HandleBeatmapCharacteristicSegmente
     BeatmapCharacteristicSO* beatmapCharacteristic
 ) {
     StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic(self, controller, beatmapCharacteristic);
-    standardLevelDetailViewController -> get_selectedDifficultyBeatmap();
+    try {
+        if (standardLevelDetailViewController == nullptr) {
+            getLogger().error("Nullptr error: standardLevelDetailViewController");
+            throw exception;
+        }
+        standardLevelDetailViewController -> get_selectedDifficultyBeatmap();
+    } catch (...) {
+        getLogger().error("Error in StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic");
+    }
 }
 
 MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_get_selectedDifficultyBeatmap, IDifficultyBeatmap*, StandardLevelDetailViewController* self
 ) {
-    auto difficulty = StandardLevelDetailViewController_get_selectedDifficultyBeatmap(self);
-    float njs = difficulty -> get_noteJumpMovementSpeed();
-    float offset = difficulty -> get_noteJumpStartBeatOffset();
-    if (njsDisplay != nullptr && offsetDisplay != nullptr) {
+    difficulty = StandardLevelDetailViewController_get_selectedDifficultyBeatmap(self);
+    try {
+        float njs = difficulty -> get_noteJumpMovementSpeed();
+        float offset = difficulty -> get_noteJumpStartBeatOffset();
+        if (njsDisplay == nullptr || offsetDisplay == nullptr) {
+            getLogger().error("Nullptr error: njsDisplay or offsetDisplay");
+            throw exception;
+        }
         njsDisplay -> SetText(FloatKeyValueToString("NJS", njs));
         offsetDisplay -> SetText(FloatKeyValueToString("Offset", offset));
-    }
+    } catch (...) {
+        getLogger().error("Error in StandardLevelDetailViewController_get_selectedDifficultyBeatmap");
+    }    
     return difficulty;
 }
 
@@ -89,20 +114,24 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_DidActivate, void, Standa
     bool addedToHierarchy, 
     bool screenSystemEnabling
 ) {
-    standardLevelDetailViewController = self;
-    if (firstActivation) {
-        BeatSaberUI::ClearCache();
-        auto layout = BeatSaberUI::CreateHorizontalLayoutGroup(self -> get_transform());
-        auto transform = layout -> get_gameObject() -> GetComponent<RectTransform*>();
-        transform -> set_anchoredPosition(Vector2(2.0f, 0.0f));
-        transform -> set_localScale(Vector3(0.9, 0.5, 0.6));
-        njsDisplay = BeatSaberUI::CreateText(transform, "");
-        njsDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
-        njsDisplay -> set_alpha(0.5f);
-        offsetDisplay = BeatSaberUI::CreateText(transform, "");
-        offsetDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
-        offsetDisplay -> set_alpha(0.5f);
-    }
+    try {
+        standardLevelDetailViewController = self;
+        if (firstActivation) {
+            BeatSaberUI::ClearCache();
+            auto layout = BeatSaberUI::CreateHorizontalLayoutGroup(self -> get_transform());
+            auto transform = layout -> get_gameObject() -> GetComponent<RectTransform*>();
+            transform -> set_anchoredPosition(Vector2(2.0f, 0.0f));
+            transform -> set_localScale(Vector3(0.9, 0.5, 0.6));
+            njsDisplay = BeatSaberUI::CreateText(transform, "Error");
+            njsDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
+            njsDisplay -> set_alpha(0.5f);
+            offsetDisplay = BeatSaberUI::CreateText(transform, "Error");
+            offsetDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
+            offsetDisplay -> set_alpha(0.5f);
+        }
+    } catch (...) {
+        getLogger().error("Error in StandardLevelDetailViewController_DidActivate");
+    }    
     StandardLevelDetailViewController_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
 }
 
@@ -112,15 +141,23 @@ MAKE_HOOK_OFFSETLESS(GameplaySetupViewController_DidActivate, void, GameplaySetu
     bool screenSystemEnabling
 ) {
     GameplaySetupViewController_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
-    if (!Submission::getEnabled()) {
-        Submission::enable(modInfo);
+    try {
+        if (!Submission::getEnabled()) {
+            Submission::enable(modInfo);
+        }
+    } catch (...) {
+        getLogger().error("Error in GameplaySetupViewController_DidActivate");
     }
 }
 
 extern "C" void setup(ModInfo& info) {
-    info.id = "NjsTweaks";
-    info.version = "0.0.1";
-    NjsTweaks::Common::Initialize(info);
+    try {
+        info.id = "NjsTweaks";
+        info.version = "0.0.1";
+        NjsTweaks::Common::Initialize(info);
+    } catch (...) {
+        (new Logger(info)) -> critical("NjsTweaks encountered an error during setup().");
+    }
 }
 
 extern "C" void load() {

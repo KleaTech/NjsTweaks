@@ -1,0 +1,4 @@
+- Add NJS selector to StandardLevelDetailView
+- Save NJS for each song
+- Dynamically handle style and color when the main Enable toggle is enabled/disabled
+- Investigate if disabling score submission, will it also disable local scores
