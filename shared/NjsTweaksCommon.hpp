@@ -2,6 +2,7 @@
 #include "beatsaber-hook/shared/config/config-utils.hpp"
 #include "beatsaber-hook/shared/utils/logging.hpp"
 #include "modloader/shared/modloader.hpp"
+#include "bs-utils/shared/utils.hpp"
 
 namespace NjsTweaks { namespace Common {
     struct config_t {
@@ -12,9 +13,13 @@ namespace NjsTweaks { namespace Common {
         bool logToFile = false;
     };
 
+    enum SubmissionState { SubmissionEnabled, SubmissionDisabled, SubmissionDisabledByOthers };
+
     extern config_t myConfig;
     extern ModInfo modInfo;
+    
+    void Initialize(ModInfo modInfo);
     Logger& getLogger();
     void SaveConfig();
-    void Initialize(ModInfo modInfo);
+    SubmissionState GetSubmissionState();
 }}

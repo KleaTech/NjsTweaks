@@ -25,12 +25,35 @@ using namespace bs_utils;
 using namespace QuestUI;
 using namespace NjsTweaks::Common;
 using namespace NjsTweaks::Utils;
+using namespace TMPro;
 
 static std::string exception = "ex";
-static TMPro::TextMeshProUGUI* njsDisplay = nullptr;
-static TMPro::TextMeshProUGUI* offsetDisplay = nullptr;
+static TextMeshProUGUI* njsDisplay = nullptr;
+static TextMeshProUGUI* offsetDisplay = nullptr;
+static TextMeshProUGUI* submissionStateDisplay = nullptr;
+static HMUI::HoverHint* submissionDisplayHint = nullptr;
 static StandardLevelDetailViewController* standardLevelDetailViewController = nullptr;
 static IDifficultyBeatmap* difficulty = nullptr;
+
+static bool isNjsChangeNeeded(float njs_in) {
+    try {
+        if (njs_in == 10.0f && myConfig.enabled) {
+            getLogger().info("Found a song with NJS 10 and NjsTweaks is enabled.");
+            if (difficulty == nullptr) {
+                getLogger().error("Nullptr error: difficulty");
+                throw exception;
+            }
+            if (myConfig.onlyOnExpert && difficulty -> get_difficulty().value != BeatmapDifficulty::Expert) {
+                getLogger().info("OnlyOnExpert is enabled, but the difficulty is not Expert.");
+            } else {
+                return true;
+            }
+        }
+    } catch (...) {
+        getLogger().error("Error in changeNjsIfNeeded");
+    }
+    return false;
+}
 
 MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpawnMovementData* self,
     int noteLinesCount,
@@ -41,21 +64,10 @@ MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpa
     Vector3 rightVec,
     Vector3 forwardVec
 ) {
-    try {
-        if (startNoteJumpMovementSpeed == 10.0f && myConfig.enabled) {
-            getLogger().info("Found a song with NJS 10 and NjsTweaks is enabled.");
-            if (myConfig.onlyOnExpert && difficulty -> get_difficulty().value != BeatmapDifficulty::Expert) {
-                getLogger().info("OnlyOnExpert is enabled, but the difficulty is not Expert.");
-            } else {
-                Submission::disable(modInfo);
-                float targetNjs = myConfig.autoIncreaseTargetNjs;
-                getLogger().info("Auto-Increasing NJS to %.2f", targetNjs);
-                startNoteJumpMovementSpeed = targetNjs;
-            }
-        }
-    } catch (...) {
-        getLogger().error("Error in BeatmapObjectSpawnMovementData_Init");
-    }    
+    if (isNjsChangeNeeded(startNoteJumpMovementSpeed)) {
+        startNoteJumpMovementSpeed = myConfig.autoIncreaseTargetNjs;
+        getLogger().info("Auto-Increasing NJS to %.2f", startNoteJumpMovementSpeed);
+    }
     BeatmapObjectSpawnMovementData_Init(self, noteLinesCount, startNoteJumpMovementSpeed, startBpm, noteJumpStartBeatOffset, jumpOffsetY, rightVec, forwardVec);
 }
 
@@ -97,12 +109,37 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_get_selectedDifficultyBea
     try {
         float njs = difficulty -> get_noteJumpMovementSpeed();
         float offset = difficulty -> get_noteJumpStartBeatOffset();
-        if (njsDisplay == nullptr || offsetDisplay == nullptr) {
-            getLogger().error("Nullptr error: njsDisplay or offsetDisplay");
+        if (njsDisplay == nullptr || offsetDisplay == nullptr || submissionStateDisplay == nullptr || submissionDisplayHint == nullptr) {
+            getLogger().error("Nullptr error: njsDisplay or offsetDisplay or submissionStateDisplay or submissionDisplayHint");
             throw exception;
         }
         njsDisplay -> SetText(FloatKeyValueToString("NJS", njs));
         offsetDisplay -> SetText(FloatKeyValueToString("Offset", offset));
+        if (isNjsChangeNeeded(njs)) {
+            Submission::disable(modInfo);
+        } else if (!Submission::getEnabled()){
+            Submission::enable(modInfo);
+        }
+        switch (GetSubmissionState()) {
+            case SubmissionEnabled: 
+                submissionStateDisplay -> set_text(il2cpp_utils::createcsstr("Score: ON"));
+                submissionStateDisplay -> set_color(Color(0.0f, 1.0f, 0.0f, 0.5f));
+                submissionDisplayHint -> set_text(il2cpp_utils::createcsstr("Score submission is enabled"));
+                break;
+            case SubmissionDisabled:
+                submissionStateDisplay -> set_text(il2cpp_utils::createcsstr("Score: OFF"));
+                submissionStateDisplay -> set_color(Color(1.0f, 0.0f, 0.0f, 0.5f));
+                submissionDisplayHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by NjsTweaks. Set the NJS to default to enable score submission for this song."));
+                break;
+            case SubmissionDisabledByOthers:
+                submissionStateDisplay -> set_text(il2cpp_utils::createcsstr("Score: OTHER MOD"));
+                submissionStateDisplay -> set_color(Color(1.0f, 1.0f, 0.0f, 0.5f));
+                submissionDisplayHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by another mod: " + Submission::getDisablingMods().begin() -> id));
+                break;
+            default:
+                getLogger().error("GetSubmissionState returned an unexpected value.");
+                throw exception;
+        }
     } catch (...) {
         getLogger().error("Error in StandardLevelDetailViewController_get_selectedDifficultyBeatmap");
     }    
@@ -123,11 +160,14 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_DidActivate, void, Standa
             transform -> set_anchoredPosition(Vector2(2.0f, 0.0f));
             transform -> set_localScale(Vector3(0.9, 0.5, 0.6));
             njsDisplay = BeatSaberUI::CreateText(transform, "Error");
-            njsDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
+            njsDisplay -> set_fontStyle(FontStyles::Bold | FontStyles::Italic);
             njsDisplay -> set_alpha(0.5f);
             offsetDisplay = BeatSaberUI::CreateText(transform, "Error");
-            offsetDisplay -> set_fontStyle(TMPro::FontStyles::Bold | TMPro::FontStyles::Italic);
+            offsetDisplay -> set_fontStyle(FontStyles::Bold | FontStyles::Italic);
             offsetDisplay -> set_alpha(0.5f);
+            submissionStateDisplay = BeatSaberUI::CreateText(transform, "Error");
+            submissionStateDisplay -> set_fontStyle(FontStyles::Bold | FontStyles::Italic);
+            submissionDisplayHint = BeatSaberUI::AddHoverHint(submissionStateDisplay -> get_gameObject(), "Error");
         }
     } catch (...) {
         getLogger().error("Error in StandardLevelDetailViewController_DidActivate");

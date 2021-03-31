@@ -1,4 +1,5 @@
 #include "NjsTweaksCommon.hpp"
+using namespace bs_utils;
 
 static Configuration* configUtil;
 static Logger* _logger;
@@ -101,5 +102,21 @@ namespace NjsTweaks { namespace Common {
 
     Logger& getLogger() {
         return *_logger;
+    }
+
+    SubmissionState GetSubmissionState() {
+        try {
+            if (Submission::getEnabled()) {
+                return SubmissionEnabled;
+            }
+            for (auto mod : Submission::getDisablingMods()) {
+                if (mod.id == modInfo.id) {
+                    return SubmissionDisabled;
+                }
+            }
+        } catch (...) {
+            getLogger().error("Error in GetSubmissionState");
+        }
+        return SubmissionDisabledByOthers;
     }
 }}
