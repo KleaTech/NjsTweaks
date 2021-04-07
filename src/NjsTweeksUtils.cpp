@@ -3,16 +3,13 @@
 using namespace NjsTweaks::Common;
 
 namespace NjsTweaks { namespace Utils {
-    Il2CppString* FloatKeyValueToString(std::string key, float value) {
+    Il2CppString* FloatToString(float value) {
         try {
             std::stringstream stream;
-            stream << key;
-            stream << ": ";
             stream << std::fixed << std::setprecision(1) << value;
-            std::string_view str = stream.str();
-            return il2cpp_utils::createcsstr(str);
+            return il2cpp_utils::createcsstr(stream.str());
         } catch (...) {
-            getLogger().error("Error in FloatKeyValueToString");
+            getLogger().error("Error in FloatToString");
         }
         return il2cpp_utils::createcsstr("Error");
     }

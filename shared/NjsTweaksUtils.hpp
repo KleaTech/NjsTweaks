@@ -4,5 +4,5 @@
 #include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 
 namespace NjsTweaks { namespace Utils {
-    Il2CppString* FloatKeyValueToString(std::string key, float value);
+    Il2CppString* FloatToString(float value);
 }}

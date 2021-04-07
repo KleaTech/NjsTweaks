@@ -11,9 +11,12 @@ namespace NjsTweaks { namespace Common {
         bool onlyOnExpert = false;
         float autoIncreaseTargetNjs = 14.0f;
         bool logToFile = false;
+        float barControlVerticalOffset = 0.0f;
     };
 
     enum SubmissionState { SubmissionEnabled, SubmissionDisabled, SubmissionDisabledByOthers };
+
+    const std::string exception = "ex";
 
     extern config_t myConfig;
     extern ModInfo modInfo;

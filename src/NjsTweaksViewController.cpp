@@ -55,6 +55,17 @@ void NjsTweaksViewController::DidActivate(bool firstActivation, bool addedToHier
             });
             BeatSaberUI::AddHoverHint(logToFileEnabledToggleObject -> get_gameObject(), "If you encounter errors, please enable this and send me the NjsTweaks log from Android/data/com.beatgames.beatsaber/files/logs/.");
 
+            auto otherSettingsTextObject = BeatSaberUI::CreateText(container -> get_transform(), "Other settings");
+            otherSettingsTextObject -> set_alignment(TextAlignmentOptions::BottomLeft);
+            otherSettingsTextObject -> set_fontSize(6.0f);
+            otherSettingsTextObject -> set_fontStyle(FontStyles::Italic | FontStyles::Bold);
+            BeatSaberUI::AddHoverHint(otherSettingsTextObject -> get_gameObject(), "Unsorted settings");
+
+            auto barControlOffsetObject = BeatSaberUI::CreateIncrementSetting(container -> get_transform(), "    Toolbar vertical offset", 1, 0.5, myConfig.barControlVerticalOffset, -50.0f, 50.0f, [](float newValue) {
+                myConfig.barControlVerticalOffset = newValue;
+            });
+            BeatSaberUI::AddHoverHint(barControlOffsetObject -> get_gameObject(), "Restart BeatSaber after setting this. If in the future another mod would add some content to the same place on the UI where NjsTweaks resides, you can relocate the NjsTweaks toolbar.");
+
             getLogger().debug("Created NjsTweaks settings view.");
         }
     } catch (...) {

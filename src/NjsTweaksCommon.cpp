@@ -60,6 +60,13 @@ namespace NjsTweaks { namespace Common {
                 configModified = true;
             }
 
+            if (configUtil -> config.HasMember("NjsTweaksConfig_BarVerticalOffset")) {
+                myConfig.barControlVerticalOffset = configUtil -> config["NjsTweaksConfig_BarVerticalOffset"].GetFloat();
+            } else {
+                configUtil -> config.AddMember("NjsTweaksConfig_BarHorizontalOffset", myConfig.barControlVerticalOffset, allocator);
+                configModified = true;
+            }
+
             if (configModified) {
                 configUtil -> Write();
                 getLogger().debug("Default values were written to the config.");
@@ -83,6 +90,7 @@ namespace NjsTweaks { namespace Common {
             configUtil -> config["NjsTweaksConfig_AutoIncrease10Njs"].SetBool(myConfig.autoIncrease10Njs);
             configUtil -> config["NjsTweaksConfig_OnlyOnExpert"].SetBool(myConfig.onlyOnExpert);
             configUtil -> config["NjsTweaksConfig_AutoIncreaseTarget"].SetFloat(myConfig.autoIncreaseTargetNjs);
+            configUtil -> config["NjsTweaksConfig_BarVerticalOffset"].SetFloat(myConfig.barControlVerticalOffset);
             configUtil -> Write();
             getLogger().debug("Saving config successful.");
         } catch (...) {
