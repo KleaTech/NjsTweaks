@@ -4,3 +4,4 @@
 - Bring back 10 NJS increase that's been temporarly removed
 - Handle score submission correctly
 - Add reset button
+- Investigate if mod.id == modInfo.id works correctly
