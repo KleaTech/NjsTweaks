@@ -7,22 +7,21 @@
 namespace NjsTweaks { namespace Common {
     struct config_t {
         bool enabled = true;
-        bool autoIncrease10Njs = false;
-        bool onlyOnExpert = false;
-        float autoIncreaseTargetNjs = 14.0f;
         bool logToFile = false;
         float barControlVerticalOffset = 0.0f;
     };
 
-    enum SubmissionState { SubmissionEnabled, SubmissionDisabled, SubmissionDisabledByOthers };
+    const std::string exception = "ex"; //Since empty throw statement is not a good idea, this dummy exception can be used with throw statements, eg. catch (...) { throw exception; }
 
-    const std::string exception = "ex";
-
-    extern config_t myConfig;
-    extern ModInfo modInfo;
+    extern config_t myConfig; //Holds the mod settings after initialize in memory. Call saveConfig to persist.
+    extern ModInfo modInfo; //Holds the current ModInfo.
     
-    void Initialize(ModInfo modInfo);
+    //Initializes mod settings, logging and potentially other common stuff.
+    void initialize(ModInfo modInfo);
+    //Returns the logger after it was configured. The logger instance changes dinamically based on the logToFile mod setting.
     Logger& getLogger();
-    void SaveConfig();
-    SubmissionState GetSubmissionState();
+    //Writes the current state of configuration to file. Without calling this, the config changes won't persist.
+    void saveConfig();
+    //If score submission is enabled, this returns an empty string, otherwise returns the first diabling mod. NjsTweaks will always be returned if it's amongst the disabling mods.
+    std::string getSubmissionDisablingMod();
 }}

@@ -1,7 +1,4 @@
 - Save NJS for each song
-- Dynamically handle style and color when the main Enable toggle is enabled/disabled
 - Actually handle njs and offset change
-- Bring back 10 NJS increase that's been temporarly removed
 - Handle score submission correctly
 - Add reset button
-- Investigate if mod.id == modInfo.id works correctly

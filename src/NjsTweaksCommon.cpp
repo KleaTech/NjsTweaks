@@ -2,22 +2,22 @@
 using namespace bs_utils;
 
 static Configuration* configUtil;
-static Logger* _logger;
+static Logger* logger;
 
 namespace NjsTweaks { namespace Common {
     config_t myConfig;
     ModInfo modInfo;
 
-    static void CreateLogger(bool logToFile) {
-        if (_logger != nullptr) {
-            _logger -> flush();
-            _logger -> close();
+    static void createLogger(bool logToFile) {
+        if (logger != nullptr) {
+            logger -> flush();
+            logger -> close();
         }
-        _logger = new Logger(modInfo, LoggerOptions(false, logToFile));
+        logger = new Logger(modInfo, LoggerOptions(false, logToFile));
         getLogger().debug("Logger created with save to file setting %s", logToFile ? "on." : "off.");
     }
 
-    static void LoadConfig() {
+    static void loadConfig() {
         try {
             getLogger().debug("Loading config...");
             configUtil = new Configuration(modInfo);
@@ -32,27 +32,6 @@ namespace NjsTweaks { namespace Common {
                 configModified = true;
             }
 
-            if (configUtil -> config.HasMember("NjsTweaksConfig_AutoIncrease10Njs")) {
-                myConfig.autoIncrease10Njs = configUtil -> config["NjsTweaksConfig_AutoIncrease10Njs"].GetBool();
-            } else {
-                configUtil -> config.AddMember("NjsTweaksConfig_AutoIncrease10Njs", myConfig.autoIncrease10Njs, allocator);
-                configModified = true;
-            }
-
-            if (configUtil -> config.HasMember("NjsTweaksConfig_OnlyOnExpert")) {
-                myConfig.onlyOnExpert = configUtil -> config["NjsTweaksConfig_OnlyOnExpert"].GetBool();
-            } else {
-                configUtil -> config.AddMember("NjsTweaksConfig_OnlyOnExpert", myConfig.onlyOnExpert, allocator);
-                configModified = true;
-            }
-
-            if (configUtil -> config.HasMember("NjsTweaksConfig_AutoIncreaseTarget")) {
-                myConfig.autoIncreaseTargetNjs = configUtil -> config["NjsTweaksConfig_AutoIncreaseTarget"].GetFloat();
-            } else {
-                configUtil -> config.AddMember("NjsTweaksConfig_AutoIncreaseTarget", myConfig.autoIncreaseTargetNjs, allocator);
-                configModified = true;
-            }
-
             if (configUtil -> config.HasMember("NjsTweaksConfig_LogToFile")) {
                 myConfig.logToFile = configUtil -> config["NjsTweaksConfig_LogToFile"].GetBool();
             } else {
@@ -63,7 +42,7 @@ namespace NjsTweaks { namespace Common {
             if (configUtil -> config.HasMember("NjsTweaksConfig_BarVerticalOffset")) {
                 myConfig.barControlVerticalOffset = configUtil -> config["NjsTweaksConfig_BarVerticalOffset"].GetFloat();
             } else {
-                configUtil -> config.AddMember("NjsTweaksConfig_BarHorizontalOffset", myConfig.barControlVerticalOffset, allocator);
+                configUtil -> config.AddMember("NjsTweaksConfig_BarVerticalOffset", myConfig.barControlVerticalOffset, allocator);
                 configModified = true;
             }
 
@@ -78,18 +57,15 @@ namespace NjsTweaks { namespace Common {
         }
     };
 
-    void SaveConfig() {
+    void saveConfig() {
         try {
             getLogger().debug("Saving config...");
             if (configUtil -> config["NjsTweaksConfig_LogToFile"].GetBool() != myConfig.logToFile) {
                 getLogger().info("Log to file was changed, now it is %s", myConfig.logToFile ? "enabled." : "disabled.");
-                CreateLogger(myConfig.logToFile);
+                createLogger(myConfig.logToFile);
             }
             configUtil -> config["NjsTweaksConfig_LogToFile"].SetBool(myConfig.logToFile);
             configUtil -> config["NjsTweaksConfig_Enabled"].SetBool(myConfig.enabled);
-            configUtil -> config["NjsTweaksConfig_AutoIncrease10Njs"].SetBool(myConfig.autoIncrease10Njs);
-            configUtil -> config["NjsTweaksConfig_OnlyOnExpert"].SetBool(myConfig.onlyOnExpert);
-            configUtil -> config["NjsTweaksConfig_AutoIncreaseTarget"].SetFloat(myConfig.autoIncreaseTargetNjs);
             configUtil -> config["NjsTweaksConfig_BarVerticalOffset"].SetFloat(myConfig.barControlVerticalOffset);
             configUtil -> Write();
             getLogger().debug("Saving config successful.");
@@ -98,33 +74,35 @@ namespace NjsTweaks { namespace Common {
         }
     }
 
-    void Initialize(ModInfo modInfo_in) {
+    void initialize(ModInfo modInfo_in) {
         modInfo = modInfo_in;
-        CreateLogger(false);
-        LoadConfig();
+        createLogger(false);
+        loadConfig();
         if (myConfig.logToFile) {
             getLogger().debug("Immediatly replacing default logger to file logger in Initialize.");
-            CreateLogger(true);
+            createLogger(true);
         }
+        getLogger().debug("NjsTweaks initializtion successful.");
     }
 
     Logger& getLogger() {
-        return *_logger;
+        return *logger;
     }
 
-    SubmissionState GetSubmissionState() {
+    std::string getSubmissionDisablingMod() {
+        getLogger().debug("Getting submission state.");
         try {
             if (Submission::getEnabled()) {
-                return SubmissionEnabled;
+                return "";
             }
             for (auto mod : Submission::getDisablingMods()) {
                 if (mod.id == modInfo.id) {
-                    return SubmissionDisabled;
+                    return mod.id;
                 }
             }
         } catch (...) {
             getLogger().error("Error in GetSubmissionState");
         }
-        return SubmissionDisabledByOthers;
+        return Submission::getDisablingMods().begin() -> id;
     }
 }}

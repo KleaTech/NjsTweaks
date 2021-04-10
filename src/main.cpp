@@ -1,4 +1,3 @@
-
 #include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
 #include "bs-utils/shared/utils.hpp"
 #include "custom-types/shared/register.hpp"
@@ -84,7 +83,7 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_HandleBeatmapCharacteristicSegmente
 MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_get_selectedDifficultyBeatmap, IDifficultyBeatmap*, StandardLevelDetailViewController* self
 ) {
     difficulty = StandardLevelDetailViewController_get_selectedDifficultyBeatmap(self);
-    OnMapChange(difficulty -> get_noteJumpMovementSpeed(), difficulty -> get_noteJumpStartBeatOffset()); 
+    onMapChange(difficulty -> get_noteJumpMovementSpeed(), difficulty -> get_noteJumpStartBeatOffset()); 
     return difficulty;
 }
 
@@ -95,7 +94,7 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_DidActivate, void, Standa
 ) {
     standardLevelDetailViewController = self;
     if (firstActivation) {
-        CreateNjsTweaksBarControl(self -> get_transform());
+        createNjsTweaksBarControl(self -> get_transform());
     }
     StandardLevelDetailViewController_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
 }
@@ -104,7 +103,7 @@ extern "C" void setup(ModInfo& info) {
     try {
         info.id = "NjsTweaks";
         info.version = "0.0.1";
-        NjsTweaks::Common::Initialize(info);
+        NjsTweaks::Common::initialize(info);
     } catch (...) {
         (new Logger(info)) -> critical("NjsTweaks encountered an error during setup().");
     }

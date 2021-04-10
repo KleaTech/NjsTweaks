@@ -3,7 +3,7 @@
 using namespace NjsTweaks::Common;
 
 namespace NjsTweaks { namespace Utils {
-    Il2CppString* FloatToString(float value) {
+    Il2CppString* floatToString(float value) {
         try {
             std::stringstream stream;
             stream << std::fixed << std::setprecision(1) << value;
