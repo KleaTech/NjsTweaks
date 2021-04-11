@@ -2,3 +2,5 @@
 - Actually handle njs and offset change
 - Handle score submission correctly
 - Add reset button
+- Rename NjsTweeksUtils to NjsTweaksUtils
+- Find a usable way to detect level change instead of get_selectedDifficultyBeatmap
