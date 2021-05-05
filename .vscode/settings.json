@@ -114,5 +114,6 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "__functional_03": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false
 }

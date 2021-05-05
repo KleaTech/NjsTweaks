@@ -27,16 +27,28 @@ namespace NjsTweaks { namespace UI {
 
     static float originalNjs = 0.5;
     static float originalOffset = 0.5;
+
+    static const float MIN_NJS = 6.0;
+    static const float MAX_NJS = 30.0;
+    static const float NJS_INCREMENT = 0.5;
+    static const float MIN_OFFSET = -2.0;
+    static const float MAX_OFFSET = 2.0;
+    static const float OFFSET_INCREMENT = 0.1;
+
     static const float HOFF = 0.0; //Horizontal offset for the whole toolbar, can be useful in the future.
     static float VOFF; //Vertical offset, useful if another mod will reside here in the future.
     static const float ZOFF = 1.0; //Offset in the Z axis to make sure the toolbar wont "cover" existing buttons. Does not seem to be necessary, but I'll leave it in for now. TODO check
+    
     static Transform* transform; //Parent transform, here for easy access.
+    
     static TextMeshProUGUI* njsText; //The text component that contains the NJS value.
     static TextMeshProUGUI* offsetText; //The text component that contains the Offset value.
     static TextMeshProUGUI* submissionText; //The whole submission text including the label and the value.
     static HoverHint* submissionHint; //The hint that appears over the submission text.
     static std::unordered_set<Button*> buttons; //Contains all the real toolbar buttons to be able to enable/disable them.
-    static bool previouslyEnabled; //Holds if the buttons were enabled previously.
+    static bool previouslyEnabled = false; //Holds if the buttons were enabled previously.
+
+    static bool levelChangeLock = false; //Indicates if we should ignore onMapChange calls. Since we use a hacky way to detect changes, we need further hacks to prevent detecting unnecessary changes. TODO check
 
     //Creates a button at the given position
     static Button* createButton(std::string textValue, float posx, float posy, std::function<void()> onClick) {
@@ -79,10 +91,24 @@ namespace NjsTweaks { namespace UI {
 
     //Handle NJS and Offset value change
     static void onValueChange() {
-        getLogger().debug("Handling NJS/Offset value change.");
+        getLogger().debug("Handling NJS/Offset value change: %.2f / %.2f", njsSetting, offsetSetting);
         njsText -> set_text(floatToString(njsSetting));
         offsetText -> set_text(floatToString(offsetSetting));
-        //TODO: enable/disable score submission
+        if (!floatEquals(njsSetting, originalNjs) || !floatEquals(offsetSetting, originalOffset)) {
+            Submission::disable(modInfo);
+            submissionText -> set_text(il2cpp_utils::createcsstr("<color=#FF0000><s>Score</s>"));
+            submissionHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by NjsTweaks. Set the NJS to the original value to enable it."));
+        } else {
+            Submission::enable(modInfo);
+            auto disablingMod = getSubmissionDisablingMod();
+            if (disablingMod != "") {
+                submissionText -> set_text(il2cpp_utils::createcsstr("Score<color=#FFFF00>?"));
+                submissionHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by another mod: " + disablingMod));
+            } else {
+                submissionText -> set_text(il2cpp_utils::createcsstr("<color=#00FF00>Score"));
+                submissionHint -> set_text(il2cpp_utils::createcsstr("Score submission is enabled."));
+            }
+        }
     }
 
     //Handle mod setting changes. Won't handle vertical offset change, because that would require destorying and recreating every single control. Restarting the game is easier.
@@ -109,19 +135,43 @@ namespace NjsTweaks { namespace UI {
             
             //NJS setting
             createText("NJS:", -3.0, -1.0);
-            createButton("<", -22.0, 0.5, [](){});
+            createButton("<", -22.0, 0.5, [](){
+               njsSetting -= NJS_INCREMENT;
+               if (floatLowerThan(njsSetting, MIN_NJS)) {
+                   njsSetting = MIN_NJS;
+               }
+               onValueChange();
+            });
             njsText = createText("ERR", 7.0, -1.0);
-            createButton(">", -12.5, 0.5, [](){});
+            createButton(">", -12.5, 0.5, [](){
+                njsSetting += NJS_INCREMENT;
+                if (floatLowerThan(MAX_NJS, njsSetting)) {
+                    njsSetting = MAX_NJS;
+                }
+                onValueChange();
+            });
 
             //Offset setting
             createText("Offset:", 20.0, -1.0);
-            createButton("<", 4.0, 0.5, [](){});
+            createButton("<", 4.0, 0.5, [](){
+                offsetSetting -= OFFSET_INCREMENT;
+                if (floatLowerThan(offsetSetting, MIN_OFFSET)) {
+                    offsetSetting = MIN_OFFSET;
+                }
+                onValueChange();
+            });
             offsetText = createText("ERR", 33.0, -1.0);
-            createButton(">", 13.5, 0.5, [](){});
+            createButton(">", 13.5, 0.5, [](){
+                offsetSetting += OFFSET_INCREMENT;
+                if (floatLowerThan(MAX_OFFSET, offsetSetting)) {
+                    offsetSetting = MAX_OFFSET;
+                }
+                onValueChange();
+            });
 
             //Submission status display
             //TODO change default ON to ERROR
-            submissionText = createText("Score: ON", 46.0, -1.0);
+            submissionText = createText("Score: ERROR", 46.0, -1.0);
             auto submissionHintDummy = createInvisibleButton(26.0, 0.5, 18.0);
             submissionHint = BeatSaberUI::AddHoverHint(submissionHintDummy -> get_gameObject(), "Score submission is enabled");
 
@@ -133,15 +183,24 @@ namespace NjsTweaks { namespace UI {
         }
     }
 
-    void onMapChange(float originalNjs_in, float originalOffset_in) {
+    void onMapChange(IDifficultyBeatmap* mapDifficulty) {
+        if (levelChangeLock) {
+            levelChangeLock = false;
+            return;
+        }
         if (previouslyEnabled != myConfig.enabled) {
             onConfigChange();
         }
         getLogger().debug("Handling map/difficulty/characteristic change.");
-        originalNjs = originalNjs_in;
-        originalOffset = originalOffset_in;
+        originalNjs = mapDifficulty -> get_noteJumpMovementSpeed();
+        originalOffset = mapDifficulty -> get_noteJumpStartBeatOffset();
         njsSetting = originalNjs;
         offsetSetting = originalOffset;
         onValueChange();
+    }
+
+    void onPlayPress() {
+        getLogger().debug("Play button is pressed.");
+        levelChangeLock = true;
     }
 }}

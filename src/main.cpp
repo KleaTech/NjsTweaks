@@ -6,14 +6,11 @@
 #include "questui/shared/BeatSaberUI.hpp"
 #include "GlobalNamespace/BeatmapObjectSpawnMovementData.hpp"
 #include "GlobalNamespace/StandardLevelDetailViewController.hpp"
-#include "GlobalNamespace/IDifficultyBeatmap.hpp"
-#include "GlobalNamespace/BeatmapDifficultySegmentedControlController.hpp"
-#include "GlobalNamespace/BeatmapCharacteristicSegmentedControlController.hpp"
-#include "GlobalNamespace/BeatmapCharacteristicCollectionSO.hpp"
-#include "GlobalNamespace/BeatmapDifficulty.hpp"
+#include "GlobalNamespace/StandardLevelDetailView.hpp"
 #include "NjsTweaksCommon.hpp"
 #include "NjsTweaksViewController.hpp"
 #include "NjsTweaksUI.hpp"
+#include "NjsTweaksUtils.hpp"
 
 using namespace GlobalNamespace;
 using namespace UnityEngine;
@@ -22,11 +19,11 @@ using namespace bs_utils;
 using namespace QuestUI;
 using namespace NjsTweaks::Common;
 using namespace NjsTweaks::UI;
+using namespace NjsTweaks::Utils;
 using namespace TMPro;
 using namespace HMUI;
 
 static StandardLevelDetailViewController* standardLevelDetailViewController = nullptr;
-static IDifficultyBeatmap* difficulty = nullptr;
 
 MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpawnMovementData* self,
     int noteLinesCount,
@@ -39,7 +36,12 @@ MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpa
 ) {
     auto newNjs = njsSetting;
     auto newOffset = offsetSetting;
-    if (newNjs != startNoteJumpMovementSpeed || newOffset != noteJumpStartBeatOffset) {
+    //When the NJS is invalid (<= 0) startNoteJumpMovementSpeed will already be a fallback value.
+    //(I'm actually not quite sure about the behavior of 0, but this approach should be safe and future proof.)
+    //If the original is 0, we accept the fallback value. If the player don't want the fallback they can set whatever value they like.
+    //Crucially though if the NJS would be negative, we will replace the fallback value with this original negative value.
+    //Therefor we can enjoy the rare gems of negative NJS maps.
+    if (!floatEquals(newNjs, 0) && (newNjs != startNoteJumpMovementSpeed || newOffset != noteJumpStartBeatOffset)) {
         getLogger().info("Starting song at %.2f NJS instead of %.2f and %.2 Offset instead of %.2.", newNjs, startNoteJumpMovementSpeed, newOffset, noteJumpStartBeatOffset);
         startNoteJumpMovementSpeed = newNjs;
         noteJumpStartBeatOffset = newOffset;
@@ -48,43 +50,9 @@ MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpa
     BeatmapObjectSpawnMovementData_Init(self, noteLinesCount, startNoteJumpMovementSpeed, startBpm, noteJumpStartBeatOffset, jumpOffsetY, rightVec, forwardVec);
 }
 
-MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty, void, StandardLevelDetailView* self, 
-    BeatmapDifficultySegmentedControlController* controller, 
-    BeatmapDifficulty difficulty
-) {
-    StandardLevelDetailView_HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty(self, controller, difficulty);
-    try {
-        if (standardLevelDetailViewController == nullptr) {
-            getLogger().error("Nullptr error: standardLevelDetailViewController");
-            throw exception;
-        }
-        standardLevelDetailViewController -> get_selectedDifficultyBeatmap();
-    } catch (...) {
-        getLogger().error("Error in StandardLevelDetailView_HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty");
-    }
-}
-
-MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic, void, StandardLevelDetailView* self, 
-    BeatmapCharacteristicSegmentedControlController* controller, 
-    BeatmapCharacteristicSO* beatmapCharacteristic
-) {
-    StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic(self, controller, beatmapCharacteristic);
-    try {
-        if (standardLevelDetailViewController == nullptr) {
-            getLogger().error("Nullptr error: standardLevelDetailViewController");
-            throw exception;
-        }
-        standardLevelDetailViewController -> get_selectedDifficultyBeatmap();
-    } catch (...) {
-        getLogger().error("Error in StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic");
-    }
-}
-
-MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_get_selectedDifficultyBeatmap, IDifficultyBeatmap*, StandardLevelDetailViewController* self
-) {
-    difficulty = StandardLevelDetailViewController_get_selectedDifficultyBeatmap(self);
-    onMapChange(difficulty -> get_noteJumpMovementSpeed(), difficulty -> get_noteJumpStartBeatOffset()); 
-    return difficulty;
+MAKE_HOOK_OFFSETLESS(StandardLevelDetailView_RefreshContent, void, StandardLevelDetailView* self) {
+    StandardLevelDetailView_RefreshContent(self);
+    onMapChange(self -> get_selectedDifficultyBeatmap());
 }
 
 MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_DidActivate, void, StandardLevelDetailViewController* self, 
@@ -102,7 +70,7 @@ MAKE_HOOK_OFFSETLESS(StandardLevelDetailViewController_DidActivate, void, Standa
 extern "C" void setup(ModInfo& info) {
     try {
         info.id = "NjsTweaks";
-        info.version = "0.0.1";
+        info.version = "0.0.2";
         NjsTweaks::Common::initialize(info);
     } catch (...) {
         (new Logger(info)) -> critical("NjsTweaks encountered an error during setup().");
@@ -119,9 +87,7 @@ extern "C" void load() {
 
     INSTALL_HOOK_OFFSETLESS(getLogger(), BeatmapObjectSpawnMovementData_Init, il2cpp_utils::FindMethodUnsafe("", "BeatmapObjectSpawnMovementData", "Init", 7));
     INSTALL_HOOK_OFFSETLESS(getLogger(), StandardLevelDetailViewController_DidActivate, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailViewController", "DidActivate", 3));
-    INSTALL_HOOK_OFFSETLESS(getLogger(), StandardLevelDetailView_HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailView", "HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty", 2));
-    INSTALL_HOOK_OFFSETLESS(getLogger(), StandardLevelDetailView_HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailView", "HandleBeatmapCharacteristicSegmentedControlControllerDidSelectBeatmapCharacteristic", 2));
-    INSTALL_HOOK_OFFSETLESS(getLogger(), StandardLevelDetailViewController_get_selectedDifficultyBeatmap, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailViewController", "get_selectedDifficultyBeatmap", 0));
+    INSTALL_HOOK_OFFSETLESS(getLogger(), StandardLevelDetailView_RefreshContent, il2cpp_utils::FindMethodUnsafe("", "StandardLevelDetailView", "RefreshContent", 0));
 
     getLogger().debug("Installed all NjsTweaks hooks successful.");
 }

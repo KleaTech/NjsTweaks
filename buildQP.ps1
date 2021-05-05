@@ -6,8 +6,8 @@ if (-not ($PSVersionTable.PSEdition -eq "Core")) {
     $buildScript += ".cmd"
 }
 
-$ArchiveName = "njstweaks_v0.0.1.qmod"
-$TempArchiveName = "njstweaks_v0.0.1.qmod.zip"
+$ArchiveName = "njstweaks_v0.0.2.qmod"
+$TempArchiveName = "njstweaks_v0.0.2.qmod.zip"
 
 & $buildScript NDK_PROJECT_PATH=$PSScriptRoot APP_BUILD_SCRIPT=$PSScriptRoot/Android.mk NDK_APPLICATION_MK=$PSScriptRoot/Application.mk
 Compress-Archive -Path "./libs/arm64-v8a/libnjstweaks.so", "./libs/arm64-v8a/libbeatsaber-hook_1_2_4.so", "./mod.json" -DestinationPath $TempArchiveName -Force

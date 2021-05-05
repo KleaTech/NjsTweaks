@@ -21,7 +21,7 @@ include_directories(.)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_compile_definitions("VERSION=\"0.0.1\"") #Modify this if you use it
+add_compile_definitions("VERSION=\"0.0.2\"") #Modify this if you use it
 add_compile_definitions("ID=\"${CMAKE_PROJECT_NAME}\"") #Modify this if you use it
 add_compile_definitions("__GNUC__")
 add_compile_definitions("__aarch64__")

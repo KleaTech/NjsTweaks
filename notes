@@ -1,0 +1,25 @@
+MAKE_HOOK_OFFSETLESS(LevelSelectionNavigationController, void, Il2CppObject* self, Il2CppObject* viewController, Il2CppObject* level) {
+	//log(DEBUG, "Hooked onto Standard View");
+
+	Il2CppString *levelID = CRASH_UNLESS(il2cpp_utils::RunMethod<Il2CppString*>(level, "get_levelID"));
+	std::string LevelData = to_utf8(csstrtostr(levelID));
+	if (isCustomSong(LevelData)) {
+		currentlySelectedIsCustomSong = true;
+		std::string JsonData = GetInfoJson(LevelData).c_str();
+		if (JsonData == "invalid") {
+			resetDiffNames();
+		}
+		else {
+			if (lastPhysicallySelectedCharacteristic == "") {
+				getPastCharacteristicFromFile();
+			}
+			d.Parse(JsonData.c_str());
+			Setdiffs(lastPhysicallySelectedCharacteristic);
+		}
+	}
+	else {
+		currentlySelectedIsCustomSong = false;
+		resetDiffNames();
+	}		
+	LevelSelectionNavigationController(self, viewController, level);
+}
