@@ -9,6 +9,4 @@ namespace NjsTweaks { namespace UI {
     void createNjsTweaksBarControl(UnityEngine::Transform* parent);
     //This method must be called when the map, it's difficulty or it's characteristic has changed.
     void onMapChange(GlobalNamespace::IDifficultyBeatmap* mapDifficulty);
-    //This method must be called when the play button is pressed.
-    void onPlayPress();
 }}

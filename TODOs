@@ -1,6 +1,5 @@
 - Save NJS for each song
-- Actually handle njs and offset change
-- Handle score submission correctly
-- Add reset button
+- Handle score submission correctly => submission is enabled too soon, scores are actually getting submitted
 - Rename NjsTweeksUtils to NjsTweaksUtils
-- Find a usable way to detect level change instead of get_selectedDifficultyBeatmap
+- Check NJS at restart song after persistence is implemented
+- Save NJS of replay

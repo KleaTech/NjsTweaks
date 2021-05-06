@@ -2,6 +2,8 @@
 #include "NjsTweaksUtils.hpp"
 #include "NjsTweaksCommon.hpp"
 #include "UnityEngine/UI/Button.hpp"
+#include "UnityEngine/UI/Image.hpp"
+#include "UnityEngine/Color.hpp"
 #include "questui/shared/BeatSaberUI.hpp"
 #include "TMPro/TextMeshProUGUI.hpp"
 #include "HMUI/HoverHint.hpp"
@@ -45,10 +47,9 @@ namespace NjsTweaks { namespace UI {
     static TextMeshProUGUI* offsetText; //The text component that contains the Offset value.
     static TextMeshProUGUI* submissionText; //The whole submission text including the label and the value.
     static HoverHint* submissionHint; //The hint that appears over the submission text.
+    static Button* resetButton; //The reset score button
     static std::unordered_set<Button*> buttons; //Contains all the real toolbar buttons to be able to enable/disable them.
     static bool previouslyEnabled = false; //Holds if the buttons were enabled previously.
-
-    static bool levelChangeLock = false; //Indicates if we should ignore onMapChange calls. Since we use a hacky way to detect changes, we need further hacks to prevent detecting unnecessary changes. TODO check
 
     //Creates a button at the given position
     static Button* createButton(std::string textValue, float posx, float posy, std::function<void()> onClick) {
@@ -69,6 +70,7 @@ namespace NjsTweaks { namespace UI {
     static Button* createInvisibleButton(float posx, float posy, float length) {
         auto button = BeatSaberUI::CreateUIButton(transform, "", Vector2(posx + HOFF, posy + VOFF), Vector2(length, 5.0), [](){});
         button -> set_interactable(false);
+        buttons.insert(button);
         return button;
     }
 
@@ -95,10 +97,12 @@ namespace NjsTweaks { namespace UI {
         njsText -> set_text(floatToString(njsSetting));
         offsetText -> set_text(floatToString(offsetSetting));
         if (!floatEquals(njsSetting, originalNjs) || !floatEquals(offsetSetting, originalOffset)) {
+            resetButton -> get_gameObject() -> SetActive(true);
             Submission::disable(modInfo);
             submissionText -> set_text(il2cpp_utils::createcsstr("<color=#FF0000><s>Score</s>"));
-            submissionHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by NjsTweaks. Set the NJS to the original value to enable it."));
+            submissionHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by NjsTweaks. Click reset to enable it."));
         } else {
+            resetButton -> get_gameObject() -> SetActive(false);
             Submission::enable(modInfo);
             auto disablingMod = getSubmissionDisablingMod();
             if (disablingMod != "") {
@@ -116,13 +120,15 @@ namespace NjsTweaks { namespace UI {
         getLogger().debug("NjsTweaks toolbar is handling config change.");
         if (myConfig.enabled) {
             for (auto button : buttons) {
-                button -> set_interactable(true);
+                button -> get_gameObject() -> SetActive(true);
             }
+            submissionText -> get_gameObject() -> SetActive(true);
             previouslyEnabled = true;
         } else {
             for (auto button : buttons) {
-                button -> set_interactable(false);
+                button -> get_gameObject() -> SetActive(false);
             }
+            submissionText -> get_gameObject() -> SetActive(false);
             previouslyEnabled = false;
         }
     }
@@ -170,10 +176,19 @@ namespace NjsTweaks { namespace UI {
             });
 
             //Submission status display
-            //TODO change default ON to ERROR
             submissionText = createText("Score: ERROR", 46.0, -1.0);
-            auto submissionHintDummy = createInvisibleButton(26.0, 0.5, 18.0);
+            auto submissionHintDummy = createInvisibleButton(23.0, 0.5, 11.0);
             submissionHint = BeatSaberUI::AddHoverHint(submissionHintDummy -> get_gameObject(), "Score submission is enabled");
+
+            //Reset settings button
+            resetButton = createButton("<color=#FF0000>X", 32.0, 0.5, [](){
+                njsSetting = originalNjs;
+                offsetSetting = originalOffset;
+                onValueChange();
+            });
+            auto resetButtonImage = resetButton -> GetComponentsInChildren<Image*>() -> values[1];
+            resetButtonImage -> set_color(Color::get_red());
+            BeatSaberUI::AddHoverHint(resetButton -> get_gameObject(), "Reset the NJS and Offset to default");
 
             onConfigChange();
 
@@ -184,10 +199,6 @@ namespace NjsTweaks { namespace UI {
     }
 
     void onMapChange(IDifficultyBeatmap* mapDifficulty) {
-        if (levelChangeLock) {
-            levelChangeLock = false;
-            return;
-        }
         if (previouslyEnabled != myConfig.enabled) {
             onConfigChange();
         }
@@ -197,10 +208,5 @@ namespace NjsTweaks { namespace UI {
         njsSetting = originalNjs;
         offsetSetting = originalOffset;
         onValueChange();
-    }
-
-    void onPlayPress() {
-        getLogger().debug("Play button is pressed.");
-        levelChangeLock = true;
     }
 }}
