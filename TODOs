@@ -3,3 +3,4 @@
 - Rename NjsTweeksUtils to NjsTweaksUtils
 - Check NJS at restart song after persistence is implemented
 - Save NJS of replay
+- Min NJS bound not working
