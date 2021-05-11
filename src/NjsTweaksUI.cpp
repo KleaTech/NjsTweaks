@@ -186,8 +186,7 @@ namespace NjsTweaks { namespace UI {
                 offsetSetting = originalOffset;
                 onValueChange();
             });
-            auto resetButtonImage = resetButton -> GetComponentsInChildren<Image*>() -> values[1];
-            resetButtonImage -> set_color(Color::get_red());
+            resetButton -> GetComponentsInChildren<Image*>() -> values[1] -> set_color(Color::get_red());
             BeatSaberUI::AddHoverHint(resetButton -> get_gameObject(), "Reset the NJS and Offset to default");
 
             onConfigChange();

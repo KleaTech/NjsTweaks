@@ -8,6 +8,6 @@ namespace NjsTweaks { namespace Utils {
     Il2CppString* floatToString(float value);
     //Checks if two float numbers are equal to 1 decimal place.
     bool floatEquals(float f1, float f2);
-    //Checks if the forst float is lower than the second to 1 decimal place.
+    //Checks if the first float is lower than the second to 1 decimal place.
     bool floatLowerThan(float f1, float f2);
 }}

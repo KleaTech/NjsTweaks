@@ -1,6 +1,4 @@
 - Save NJS for each song
-- Handle score submission correctly => submission is enabled too soon, scores are actually getting submitted
-- Rename NjsTweeksUtils to NjsTweaksUtils
+- Submission is enabled too soon, scores are actually getting submitted => not trivial to solve, let's wait for persistence, it should solve itself then
 - Check NJS at restart song after persistence is implemented
 - Save NJS of replay
-- Min NJS bound not working

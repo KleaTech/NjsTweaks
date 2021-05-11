@@ -25,8 +25,8 @@ namespace NjsTweaks { namespace Utils {
 
     //This implementation is probably correct, but I'm not 100% sure. Use with caution.
     bool floatLowerThan(float f1, float f2) {
-        if (fabsf(f2 - f1) < 0.05) {
-            return true;
+        if (!floatEquals(f1, f2)) {
+            return f1 < f2;
         }
         return false;
     }
