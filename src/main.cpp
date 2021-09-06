@@ -12,6 +12,12 @@
 #include "NjsTweaksUI.hpp"
 #include "NjsTweaksUtils.hpp"
 
+#include "GlobalNamespace/LevelSelectionNavigationController.hpp"
+#include "GlobalNamespace/IPreviewBeatmapLevel.hpp"
+#include "GlobalNamespace/IDifficultyBeatmap.hpp"
+#include "GlobalNamespace/LevelCollectionNavigationController.hpp"
+#include "beatsaber-hook/shared/utils/utils-functions.h"
+
 using namespace GlobalNamespace;
 using namespace UnityEngine;
 using namespace NjsTweaks;
@@ -24,6 +30,7 @@ using namespace TMPro;
 using namespace HMUI;
 
 static StandardLevelDetailViewController* standardLevelDetailViewController = nullptr;
+static LevelSelectionNavigationController* levelSelectionNavigationController = nullptr;
 
 MAKE_HOOK_OFFSETLESS(BeatmapObjectSpawnMovementData_Init, void, BeatmapObjectSpawnMovementData* self,
     int noteLinesCount,

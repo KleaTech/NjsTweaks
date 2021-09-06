@@ -8,6 +8,7 @@
 #include "TMPro/TextMeshProUGUI.hpp"
 #include "HMUI/HoverHint.hpp"
 #include "bs-utils/shared/utils.hpp"
+#include "GlobalNamespace/IPreviewBeatmapLevel.hpp"
 using namespace QuestUI;
 using namespace UnityEngine;
 using namespace UnityEngine::UI;
@@ -206,6 +207,9 @@ namespace NjsTweaks { namespace UI {
         originalOffset = mapDifficulty -> get_noteJumpStartBeatOffset();
         njsSetting = originalNjs;
         offsetSetting = originalOffset;
+        IPreviewBeatmapLevel* previewLevel = reinterpret_cast<IPreviewBeatmapLevel*>(mapDifficulty -> get_level());
+        auto levelId = previewLevel -> get_levelID();
+        getLogger().debug(to_utf8(csstrtostr(levelId)));
         onValueChange();
     }
 }}
