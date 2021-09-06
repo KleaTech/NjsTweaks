@@ -1,3 +1,5 @@
+./copy.ps1 --log | ?{$_ -like "*NjsTweaks*"}
+
 MAKE_HOOK_OFFSETLESS(LevelSelectionNavigationController, void, Il2CppObject* self, Il2CppObject* viewController, Il2CppObject* level) {
 	//log(DEBUG, "Hooked onto Standard View");
 

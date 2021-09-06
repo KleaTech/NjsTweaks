@@ -106,6 +106,7 @@ namespace NjsTweaks { namespace UI {
             resetButton -> get_gameObject() -> SetActive(false);
             Submission::enable(modInfo);
             auto disablingMod = getSubmissionDisablingMod();
+            getLogger().debug("Got submission state.");
             if (disablingMod != "") {
                 submissionText -> set_text(il2cpp_utils::createcsstr("Score<color=#FFFF00>?"));
                 submissionHint -> set_text(il2cpp_utils::createcsstr("Score submission is disabled by another mod: " + disablingMod));
@@ -209,7 +210,7 @@ namespace NjsTweaks { namespace UI {
         offsetSetting = originalOffset;
         IPreviewBeatmapLevel* previewLevel = reinterpret_cast<IPreviewBeatmapLevel*>(mapDifficulty -> get_level());
         auto levelId = previewLevel -> get_levelID();
-        getLogger().debug(to_utf8(csstrtostr(levelId)));
+        getLogger().debug("%s", to_utf8(csstrtostr(levelId)).c_str());
         onValueChange();
     }
 }}

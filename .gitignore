@@ -32,8 +32,7 @@
 *.app
 
 # VSCode config stuff
-!.vscode/c_cpp_properties.json
-!.vscode/tasks.json
+.vscode/
 
 # NDK stuff
 out/

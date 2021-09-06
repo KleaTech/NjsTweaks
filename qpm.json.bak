@@ -4,7 +4,7 @@
   "info": {
     "name": "NjsTweaks",
     "id": "NjsTweaks",
-    "version": "0.0.3",
+    "version": "0.0.2",
     "url": null,
     "additionalData": {}
   },
@@ -34,13 +34,8 @@
       "additionalData": {}
     },
     {
-      "id": "config-utils",
-      "versionRange": "*",
-      "additionalData": {}
-    },
-    {
       "id": "questui",
-      "versionRange": "^0.10.2",
+      "versionRange": "*",
       "additionalData": {}
     },
     {

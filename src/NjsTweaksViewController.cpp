@@ -9,37 +9,40 @@ using namespace NjsTweaks::Common;
 using namespace QuestUI;
 using namespace TMPro;
 
-DEFINE_CLASS(NjsTweaksViewController);
+DEFINE_TYPE(NjsTweaks, NjsTweaksViewController);
 
-void NjsTweaksViewController::DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling) {
-    try {
-        if (firstActivation) {
-            getLogger().debug("Creating NjsTweaks settings view...");
-            get_gameObject() -> AddComponent<Touchable*>();
-            auto container = BeatSaberUI::CreateScrollableSettingsContainer(get_transform());
-            
-            auto enabledToggleObject = BeatSaberUI::CreateToggle(container -> get_transform(), "Enable", myConfig.enabled, [](bool newValue) {
-                myConfig.enabled = newValue;
-            });
-            BeatSaberUI::AddHoverHint(enabledToggleObject -> get_gameObject(), "When disabled all song will have their original NJS.");
+namespace NjsTweaks {
 
-            auto logToFileEnabledToggleObject = BeatSaberUI::CreateToggle(container -> get_transform(), "Log to file", myConfig.logToFile, [](bool newValue) {
-                myConfig.logToFile = newValue;
-            });
-            BeatSaberUI::AddHoverHint(logToFileEnabledToggleObject -> get_gameObject(), "If you encounter errors, please enable this and send me the NjsTweaks log from Android/data/com.beatgames.beatsaber/files/logs/.");
+    void NjsTweaksViewController::DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling) {
+        try {
+            if (firstActivation) {
+                getLogger().debug("Creating NjsTweaks settings view...");
+                get_gameObject() -> AddComponent<Touchable*>();
+                auto container = BeatSaberUI::CreateScrollableSettingsContainer(get_transform());
 
-            auto barControlOffsetObject = BeatSaberUI::CreateIncrementSetting(container -> get_transform(), "Toolbar vertical offset", 1, 0.5, myConfig.barControlVerticalOffset, -50.0f, 50.0f, [](float newValue) {
-                myConfig.barControlVerticalOffset = newValue;
-            });
-            BeatSaberUI::AddHoverHint(barControlOffsetObject -> get_gameObject(), "Restart BeatSaber after setting this. If in the future another mod would add some content to the same place on the UI where NjsTweaks resides, you can relocate the NjsTweaks toolbar.");
+                auto enabledToggleObject = BeatSaberUI::CreateToggle(container -> get_transform(), "Enable", myConfig.enabled, [](bool newValue) {
+                    myConfig.enabled = newValue;
+                });
+                BeatSaberUI::AddHoverHint(enabledToggleObject -> get_gameObject(), "When disabled all song will have their original NJS.");
 
-            getLogger().debug("Created NjsTweaks settings view.");
+                auto logToFileEnabledToggleObject = BeatSaberUI::CreateToggle(container -> get_transform(), "Log to file", myConfig.logToFile, [](bool newValue) {
+                    myConfig.logToFile = newValue;
+                });
+                BeatSaberUI::AddHoverHint(logToFileEnabledToggleObject -> get_gameObject(), "If you encounter errors, please enable this and send me the NjsTweaks log from Android/data/com.beatgames.beatsaber/files/logs/.");
+
+                auto barControlOffsetObject = BeatSaberUI::CreateIncrementSetting(container -> get_transform(), "Toolbar vertical offset", 1, 0.5, myConfig.barControlVerticalOffset, -50.0f, 50.0f, [](float newValue) {
+                    myConfig.barControlVerticalOffset = newValue;
+                });
+                BeatSaberUI::AddHoverHint(barControlOffsetObject -> get_gameObject(), "Restart BeatSaber after setting this. If in the future another mod would add some content to the same place on the UI where NjsTweaks resides, you can relocate the NjsTweaks toolbar.");
+
+                getLogger().debug("Created NjsTweaks settings view.");
+            }
+        } catch (...) {
+            getLogger().error("Error in NjsTweaksViewController::DidActivate");
         }
-    } catch (...) {
-        getLogger().error("Error in NjsTweaksViewController::DidActivate");
     }
-}
 
-void NjsTweaksViewController::DidDeactivate(bool removedFromHierarchy, bool systemScreenDisabling) {
-    saveConfig();
+    void NjsTweaksViewController::DidDeactivate(bool removedFromHierarchy, bool systemScreenDisabling) {
+        saveConfig();
+    }
 }
